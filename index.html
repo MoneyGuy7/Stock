@@ -1,0 +1,1318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DayTrade Simulator — Realistic Fake Market</title>
+<meta name="description" content="Single-file Day Trading Simulator for GitHub Pages — realistic fake market, candlesticks, orders, portfolio, news, achievements." />
+<style>
+/* ===================================================================
+   DayTrade Simulator - Styles
+   A big modern UI designed to look good on desktop. Responsive tweaks
+   included. All styles inside this file so project is single-file.
+   =================================================================== */
+
+/* Colors */
+:root{
+  --bg:#071021;
+  --panel:#0c1622;
+  --accent:#00d7a6;
+  --accent-2:#6fe3ff;
+  --danger:#ff6b6b;
+  --muted:#9fb3c8;
+  --glass: rgba(255,255,255,0.03);
+  --glass-2: rgba(255,255,255,0.015);
+  --glass-3: rgba(255,255,255,0.008);
+}
+
+/* Reset */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background:
+    radial-gradient(1000px 400px at 10% 10%, rgba(0,215,170,0.02), transparent),
+    linear-gradient(180deg, #02040a 0%, #051022 100%);
+  color:#dff6ee;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  padding:18px;
+}
+
+/* Topbar */
+.topbar{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:12px;
+}
+.brand{
+  display:flex;align-items:center;gap:12px;
+}
+.brand .logo{
+  width:44px;height:44px;border-radius:8px;background:linear-gradient(180deg,var(--accent),var(--accent-2));display:grid;place-items:center;
+  font-weight:800;color:#022;box-shadow:0 8px 30px rgba(0,215,170,0.06);
+}
+.brand h1{font-size:18px;margin:0}
+.controls{display:flex;gap:8px;align-items:center}
+
+/* Layout grid */
+.layout{
+  display:grid;
+  grid-template-columns: 360px 1fr 360px;
+  gap:14px;
+  align-items:start;
+  width:100%;
+}
+
+/* Panel */
+.panel{
+  background: linear-gradient(180deg, rgba(255,255,255,0.014), rgba(255,255,255,0.006));
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.03);
+  padding:12px;
+  box-shadow:0 14px 50px rgba(0,0,0,0.6);
+}
+
+/* Left column: market list & heatmap */
+.left{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.search{display:flex;gap:8px;align-items:center}
+.search input{
+  flex:1;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted)
+}
+.ticker-list{height:420px;overflow:auto;margin-top:8px}
+.ticker-row{
+  display:flex;justify-content:space-between;gap:8px;padding:8px;border-radius:8px;margin-bottom:6px;align-items:center;
+  background: linear-gradient(180deg, rgba(255,255,255,0.008), rgba(255,255,255,0.004));
+  border:1px solid rgba(255,255,255,0.01);
+}
+.ticker-row .sym{font-weight:800}
+.ticker-row .price{font-weight:700}
+.heatmap{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.heat-tile{padding:10px;border-radius:8px;text-align:center;font-weight:700}
+
+/* Center: chart & order panel */
+.center{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.chartWrap{height:480px;position:relative}
+.chartCanvas{width:100%;height:100%;border-radius:10px;background:linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.18));display:block}
+.chartToolbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
+.btn{padding:8px 10px;border-radius:8px;border:0;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));color:var(--muted);cursor:pointer}
+.btn.primary{background:linear-gradient(180deg, rgba(0,215,170,0.06), rgba(0,215,170,0.02));color:#042a20;font-weight:700}
+
+/* Order form */
+.orderPanel{display:flex;gap:8px;align-items:center}
+.orderPanel input, .orderPanel select{padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
+
+/* Right: portfolio + news + achievements */
+.right{display:flex;flex-direction:column;gap:12px}
+.portfolio table{width:100%;border-collapse:collapse}
+.portfolio th, .portfolio td{padding:8px;border-bottom:1px dashed rgba(255,255,255,0.02);text-align:left}
+.balance{font-size:22px;font-weight:800;color:var(--accent)}
+
+/* Terminal logs */
+.terminal{height:200px;overflow:auto;margin-top:8px;padding:8px;border-radius:8px;background:linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.3));font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:13px;color:#bdf6e3}
+
+/* Help / tutorial */
+.help{font-size:13px;color:var(--muted)}
+
+/* Footer */
+.footer{text-align:center;color:var(--muted);font-size:13px;margin-top:12px}
+
+/* Responsive */
+@media (max-width:1100px){
+  .layout{grid-template-columns: 1fr; }
+  .left,.right{order:2}
+  .center{order:1}
+}
+</style>
+</head>
+<body>
+  <!-- ===================================================================
+       Top bar
+       =================================================================== -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">DT</div>
+      <div>
+        <h1>DayTrade Simulator</h1>
+        <div style="font-size:12px;color:var(--muted)">Realistic-like fake market — client only</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="btnTutorial" class="btn">Tutorial</button>
+      <button id="btnNewDay" class="btn">New Session</button>
+      <button id="btnExport" class="btn">Export Log</button>
+      <div style="width:2px;height:32px;background:rgba(255,255,255,0.02)"></div>
+      <div style="text-align:right">
+        <div style="font-size:12px;color:var(--muted)">Market Time</div>
+        <div id="marketTime" style="font-weight:700">09:30</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       Main layout: left (tickers), center (chart & orders), right (portfolio)
+       =================================================================== -->
+  <div class="layout">
+
+    <!-- LEFT column -->
+    <div class="left panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:800;color:var(--accent)">Market Watch</div>
+        <div style="font-size:13px;color:var(--muted)">Sim: realistic model</div>
+      </div>
+
+      <div class="search" style="margin-top:10px">
+        <input id="searchInput" placeholder="Search symbol or company..." />
+        <select id="sectorFilter">
+          <option value="">All sectors</option>
+        </select>
+      </div>
+
+      <div class="ticker-list panel" id="tickerList">
+        <!-- ticker rows dynamically filled -->
+      </div>
+
+      <div style="margin-top:10px">
+        <div style="font-weight:700;color:var(--muted);margin-bottom:6px">Market Heatmap</div>
+        <div class="heatmap" id="heatmap"></div>
+      </div>
+    </div>
+
+    <!-- CENTER column -->
+    <div class="center">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:800;color:var(--accent)">Chart</div>
+          <div style="font-size:13px;color:var(--muted)"><span id="chartSymbol">--</span> • <span id="chartInterval">1m</span></div>
+        </div>
+
+        <div class="chartWrap" style="margin-top:10px">
+          <canvas id="chartCanvas" class="chartCanvas"></canvas>
+        </div>
+
+        <div class="chartToolbar">
+          <div style="display:flex;gap:6px;align-items:center">
+            <select id="intervalSelect" class="btn">
+              <option value="1">1m</option>
+              <option value="5">5m</option>
+              <option value="15">15m</option>
+              <option value="60">60m</option>
+            </select>
+            <button id="btnZoomIn" class="btn">Zoom In</button>
+            <button id="btnZoomOut" class="btn">Zoom Out</button>
+            <button id="btnReplay" class="btn">Replay</button>
+            <button id="btnAccelerate" class="btn">Speed x1</button>
+          </div>
+
+          <div style="display:flex;gap:8px;align-items:center">
+            <div style="font-size:13px;color:var(--muted)">Order Type</div>
+            <select id="orderType" class="btn">
+              <option value="market">Market</option>
+              <option value="limit">Limit</option>
+              <option value="stop">Stop-Loss</option>
+            </select>
+            <div style="width:8px"></div>
+            <div style="font-size:13px;color:var(--muted)">Amount</div>
+            <input id="orderAmount" class="btn" type="number" value="1" style="width:90px" />
+            <div style="width:8px"></div>
+            <button id="btnBuy" class="btn primary">Buy</button>
+            <button id="btnSell" class="btn">Sell</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="display:flex;gap:12px;align-items:flex-start">
+        <div style="flex:1">
+          <div style="font-weight:800;color:var(--accent)">Order Book & History</div>
+          <div style="height:200px;overflow:auto;margin-top:8px" id="orderHistory"></div>
+        </div>
+        <div style="width:260px">
+          <div style="font-weight:800;color:var(--accent)">Market Movers</div>
+          <div id="topMovers" style="margin-top:8px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT column -->
+    <div class="right">
+
+      <div class="panel portfolio">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:800;color:var(--accent)">Portfolio</div>
+          <div style="font-size:12px;color:var(--muted)">P&L / positions</div>
+        </div>
+
+        <div style="margin-top:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:13px;color:var(--muted)">Cash</div>
+            <div class="balance" id="cashBalance">$100,000</div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+        <table>
+          <thead><tr><th>Symbol</th><th>Qty</th><th>Avg</th><th>Market</th><th>P&L</th></tr></thead>
+          <tbody id="positionsTable">
+            <!-- dynamic -->
+          </tbody>
+        </table>
+
+        <div style="height:12px"></div>
+        <div style="font-weight:700;color:var(--muted)">Unrealized: <span id="unrealized">$0</span></div>
+        <div style="font-weight:700;color:var(--muted)">Realized: <span id="realized">$0</span></div>
+
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:800;color:var(--accent)">News Feed</div>
+          <div style="font-size:12px;color:var(--muted)">Impact +/-</div>
+        </div>
+        <div class="terminal" id="newsFeed" style="height:160px;margin-top:8px"></div>
+        <div style="height:8px"></div>
+        <div style="font-weight:700;color:var(--accent)">Achievements</div>
+        <div id="achievements" style="margin-top:8px"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">Made for demo & education. All prices are simulated. No real trading.</div>
+
+<script>
+/* ===================================================================
+   DayTrade Simulator - JavaScript
+   This is one big single-file project. Comments are plentiful to help
+   you read and modify. The engine is deterministic-ish but includes
+   randomness to emulate a market.
+   =================================================================== */
+
+/* ---------------------------
+   Utilities & Helpers
+   --------------------------- */
+function $(id){ return document.getElementById(id); }
+function fmt(n){ // currency formatting
+  return (typeof n === 'number' ? n : Number(n)).toLocaleString(undefined, {style:'currency', currency:'USD', maximumFractionDigits:2});
+}
+function rnd(min,max){ return Math.random()*(max-min)+min; }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function now(){ return new Date(); }
+
+/* ---------------------------
+   Simulator Configuration
+   --------------------------- */
+
+const CONFIG = {
+  INITIAL_CASH: 100000,
+  START_PRICE_MIN: 10,
+  START_PRICE_MAX: 400,
+  TICKERS_COUNT: 100,
+  MARKET_OPEN_HOUR: 9, MARKET_OPEN_MIN: 30,
+  MARKET_CLOSE_HOUR: 16, MARKET_CLOSE_MIN: 0,
+  SIM_TICK_MS: 1000, // how often simulation advances in accelerated time (ms real)
+  NORMAL_TICK_SEC: 60, // each sim tick represents this many seconds by default
+  ACCELERATIONS: [1, 5, 15, 60] // multiples of real time speed
+}
+
+/* ---------------------------
+   State
+   --------------------------- */
+
+let STATE = {
+  marketTimeSec: 0, // seconds since market open
+  isMarketOpen: false,
+  tickers: [], // array of ticker objects
+  priceHistory: {}, // symbol -> array of candle objects
+  positions: {}, // symbol -> {qty, avgPrice}
+  cash: CONFIG.INITIAL_CASH,
+  realized: 0,
+  unrealized: 0,
+  orders: [], // active orders (limit/stop)
+  trades: [], // executed trades log
+  news: [],
+  achievements: {},
+  logs: [],
+  simSpeedIdx: 0, // index in CONFIG.ACCELERATIONS
+  running: true,
+  seed: Math.floor(Math.random()*1e9)
+};
+
+/* ---------------------------
+   Random seed helper - minimal LCG for reproducibility
+   --------------------------- */
+function makeLCG(seed) {
+  let s = seed >>> 0;
+  return function() { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }
+}
+let rand = makeLCG(STATE.seed);
+
+/* ---------------------------
+   Ticker generator - produce TICKERS_COUNT symbols with names
+   --------------------------- */
+
+const SECTORS = ["Technology","Healthcare","Finance","Energy","Retail","Industrial","Consumer","Crypto","Biotech","Utilities","Transport","RealEstate","Media","Gaming","AI"];
+function randSector(){ return SECTORS[Math.floor(rand()*SECTORS.length)]; }
+function genSymbol(name) {
+  // Make short uppercase symbol from name words
+  const parts = name.split(' ').filter(Boolean);
+  if (parts.length===1) return parts[0].slice(0,4).toUpperCase();
+  return parts.map(p=>p[0]).join('').slice(0,4).toUpperCase();
+}
+function makeCompanyName() {
+  const a = ["Nova","Quantum","Atlas","Vertex","Apex","Helix","Pulse","Nimbus","Aurora","Vantage","Summit","Stratus","Fusion","Zenith","Cobalt","Argon","Orion","Nimble","Echo","Catalyst","Blue","Green","Prime","Core","Solar","Lumen","Cipher","Forge","Arc","Grid"];
+  const b = ["Systems","Holdings","Networks","Labs","Enterprises","Dynamics","Technologies","Capital","Resources","Media","Logistics","Pharma","Interactive","Markets","Solutions","Energy","Design","Consulting","Studios"];
+  return a[Math.floor(rand()*a.length)] + ' ' + b[Math.floor(rand()*b.length)];
+}
+
+function initTickers(){
+  STATE.tickers = [];
+  const used = new Set();
+  for (let i=0;i<CONFIG.TICKERS_COUNT;i++){
+    const name = makeCompanyName();
+    let sym = genSymbol(name);
+    // ensure uniqueness
+    let j=1;
+    while (used.has(sym)) { sym = (genSymbol(name) + j); j++; }
+    used.add(sym);
+    const sector = randSector();
+    const price = clamp(Math.round(rnd(CONFIG.START_PRICE_MIN, CONFIG.START_PRICE_MAX)*100)/100, 1, 1000);
+    const volatility = clamp( rnd(0.8,3.5) * (1 + (rand()*0.6)), 0.5, 6 ); // percent daily vol proxy
+    const beta = rnd(0.6,1.8); // sensitivity to market moves
+    const momentum = rnd(-0.5,0.5);
+    const ticker = {
+      symbol: sym,
+      name,
+      sector,
+      price,
+      mid: price,
+      volatility,
+      beta,
+      momentum,
+      liquidity: Math.round(rnd(1000,40000)),
+      spread: clamp(rnd(0.01,0.5),0.01,1),
+      floats: Math.round(rnd(1e6,5e8)),
+      newsSentiment: 0,
+      lastUpdate: Date.now()
+    };
+    STATE.tickers.push(ticker);
+    STATE.priceHistory[sym] = []; // candles
+  }
+}
+
+/* ---------------------------
+   Candle & price model
+   We maintain candle arrays for multiple intervals by aggregating ticks.
+   For performance, we store base-per-tick prices and then aggregate.
+   --------------------------- */
+
+function makeCandle(timeSec, open, high, low, close, volume) {
+  return { timeSec, open, high, low, close, volume };
+}
+
+function appendPricePoint(symbol, price, vol, timeSec) {
+  // For the smallest resolution (1m) we append or update a candle
+  let arr = STATE.priceHistory[symbol];
+  if (!arr) arr = STATE.priceHistory[symbol] = [];
+  const last = arr.length ? arr[arr.length-1] : null;
+  if (last && last.timeSec === timeSec) {
+    last.high = Math.max(last.high, price);
+    last.low = Math.min(last.low, price);
+    last.close = price;
+    last.volume += vol;
+  } else {
+    arr.push(makeCandle(timeSec, price, price, price, price, vol));
+    // keep array length reasonable (for memory)
+    if (arr.length > 2000) arr.shift();
+  }
+}
+
+/* ---------------------------
+   Economic / market index model
+   A simple market factor to move many stocks together
+   --------------------------- */
+let marketIndex = {
+  level: 1000,
+  volatility: 0.8, // percent-ish
+  momentum: 0,
+  drift: 0,
+  shock: 0
+};
+
+function stepMarketIndex(dtSec) {
+  // basic Ornstein–Uhlenbeck + momentum + rare shocks
+  const v = marketIndex.volatility;
+  const mu = 1000; // long term mean
+  const reversion = 0.0002; // stronger -> faster mean reversion
+  const rndShock = (rand()-0.5) * v * 2 * Math.sqrt(dtSec/60);
+  // occasional shock
+  if (rand() < 0.0006) {
+    marketIndex.shock = (rand()-0.5) * 0.05 * mu; // big shock percent of mu
+  } else {
+    marketIndex.shock *= 0.92;
+  }
+  marketIndex.momentum = marketIndex.momentum * 0.98 + (rand()-0.5) * 0.1;
+  marketIndex.level += ( (mu - marketIndex.level) * reversion * dtSec ) + rndShock * (1 + marketIndex.momentum) + marketIndex.shock;
+  if (marketIndex.level < 100) marketIndex.level = 100;
+}
+
+/* ---------------------------
+   Price step for each ticker
+   We'll update tickers every sim tick based on:
+   - marketIndex moves (beta)
+   - ticker-specific volatility and momentum
+   - newsSentiment
+   - mean reversion to mid
+   - liquidity & spread determine price jumps and volume
+   --------------------------- */
+
+function stepTickers(dtSec) {
+  for (let t of STATE.tickers) {
+    const old = t.price;
+    // base factor from market index percent change
+    const marketPct = (marketIndex.level - 1000) / 1000;
+    const marketEffect = t.beta * marketPct * 0.6;
+
+    // random movement proportional to volatility
+    const volFactor = t.volatility * Math.sqrt(dtSec/60);
+    const randomMove = (rand() - 0.5) * volFactor;
+
+    // news sentiment effect
+    const newsEffect = t.newsSentiment * 0.015 * (dtSec/60);
+
+    // momentum / mean reversion
+    const reversion = (t.mid - t.price) * 0.0008 * (dtSec/60);
+    const momentum = t.momentum * 0.0008 * (dtSec/60);
+
+    // liquidity dampener (illiquid -> bigger jumps)
+    const liqu = 1 + (20000 / (t.liquidity + 1000));
+
+    // final new price (multiplicative)
+    let pctChange = (marketEffect + randomMove * liqu + newsEffect + reversion + momentum);
+    // cap pctChange to reasonable range per tick
+    pctChange = clamp(pctChange, -0.15, 0.15);
+    const newPrice = Math.max(0.01, +(t.price * (1 + pctChange)).toFixed(4));
+
+    // update
+    t.price = newPrice;
+    t.lastUpdate = Date.now();
+
+    // append to 1m candle at proper time
+    appendPricePoint(t.symbol, t.price, Math.round(Math.abs(pctChange)*t.liquidity + rnd(1, t.liquidity/200)), STATE.marketTimeSec);
+  }
+}
+
+/* ---------------------------
+   News engine - generates headlines affecting one or more tickers
+   --------------------------- */
+const NEWS_TEMPLATES = [
+  { text: "{sym} reports strong earnings beating estimates", impact: 0.08 },
+  { text: "{sym} misses revenue expectations", impact: -0.06 },
+  { text: "{sym} announces CEO departure", impact: -0.04 },
+  { text: "{sym} launches new product that excites markets", impact: 0.05 },
+  { text: "{sym} investigation rumored by regulator", impact: -0.07 },
+  { text: "{sym} signs major partnership with {partner}", impact: 0.04 },
+  { text: "{sym} flagged for data breach", impact: -0.09 },
+  { text: "{sym} receives bullish analyst upgrade", impact: 0.03 },
+  { text: "{sym} under insider buying reports", impact: 0.02 },
+  { text: "{sym} announces buyback program", impact: 0.035 }
+];
+
+const PARTNERS = ["GlobalTech","AstraCorp","Valence","BlueOcean","PrimeLogix","NovaEnergi","QuantumWorks"];
+
+function emitNews() {
+  // randomly choose whether a news event occurs
+  if (rand() < 0.12) {
+    const t = NEWS_TEMPLATES[Math.floor(rand()*NEWS_TEMPLATES.length)];
+    const ticker = STATE.tickers[Math.floor(rand()*STATE.tickers.length)];
+    const partner = PARTNERS[Math.floor(rand()*PARTNERS.length)];
+    let text = t.text.replace("{sym}", ticker.symbol).replace("{partner}", partner);
+    const impact = t.impact * (1 + (rand()-0.5)*0.6);
+    ticker.newsSentiment = impact; // one-off sentiment; decays over time
+    // create a news item object
+    const ni = { ts: now().toLocaleString(), symbol: ticker.symbol, text, impact };
+    STATE.news.unshift(ni);
+    if (STATE.news.length > 200) STATE.news.pop();
+    pushLog(`NEWS: ${text} (impact ${impact>0?'+':''}${(impact*100).toFixed(1)}%)`);
+    // schedule sentiment decay
+    setTimeout(()=> { ticker.newsSentiment *= 0.5; }, 60000 * 5); // decay after 5m in real simulation units
+  }
+}
+
+/* ---------------------------
+   Orders, matching & executions
+   We support Market, Limit, Stop-Loss (simple), and simulated fills using liquidity & spread.
+   Limit & stop orders are stored in state.orders. Market orders execute immediately at current price.
+   --------------------------- */
+
+function placeOrder(order){
+  // order structure:
+  // { id, symbol, side: 'buy'|'sell', type:'market'|'limit'|'stop', qty, price (for limit/stop), ts }
+  order.id = 'ORD' + (Date.now()).toString(36) + Math.floor(rand()*9999);
+  order.ts = Date.now();
+  // execute market orders immediately
+  if (order.type === 'market') {
+    executeTrade(order.symbol, order.side, order.qty, null, { marketOrder:true, orderId: order.id });
+    pushLog(`Market ${order.side.toUpperCase()} ${order.qty} ${order.symbol}`);
+  } else {
+    // store limit/stop
+    STATE.orders.push(order);
+    pushLog(`Placed ${order.type.toUpperCase()} ${order.side} order ${order.qty} ${order.symbol} @ ${order.price ? '$'+order.price : '—'}`);
+  }
+  saveState();
+}
+
+/* check limit/stop orders each tick */
+function processOrders() {
+  const executed = [];
+  for (let i=STATE.orders.length-1; i>=0; i--) {
+    const o = STATE.orders[i];
+    const t = STATE.tickers.find(x=>x.symbol===o.symbol);
+    if (!t) continue;
+    if (o.type === 'limit') {
+      if (o.side === 'buy' && t.price <= o.price) {
+        executeTrade(o.symbol, 'buy', o.qty, o.price, {orderId:o.id});
+        executed.push(o.id);
+        STATE.orders.splice(i,1);
+      } else if (o.side === 'sell' && t.price >= o.price) {
+        executeTrade(o.symbol, 'sell', o.qty, o.price, {orderId:o.id});
+        executed.push(o.id);
+        STATE.orders.splice(i,1);
+      }
+    } else if (o.type === 'stop') {
+      // stop becomes market when triggered
+      if (o.side === 'buy' && t.price >= o.price) {
+        executeTrade(o.symbol,'buy',o.qty,null,{orderId:o.id, triggered:true});
+        executed.push(o.id); STATE.orders.splice(i,1);
+      } else if (o.side === 'sell' && t.price <= o.price) {
+        executeTrade(o.symbol,'sell',o.qty,null,{orderId:o.id, triggered:true});
+        executed.push(o.id); STATE.orders.splice(i,1);
+      }
+    }
+  }
+  if (executed.length) saveState();
+}
+
+/* Execute trade: simple fill logic */
+function executeTrade(symbol, side, qty, limitPrice=null, meta={}) {
+  const t = STATE.tickers.find(x=>x.symbol===symbol);
+  if (!t) { console.warn('Symbol not found', symbol); return; }
+  // Determine execution price
+  let execPrice = t.price;
+  if (limitPrice && ( (side==='buy' && limitPrice < execPrice) || (side==='sell' && limitPrice > execPrice) )) {
+    // if limit price worse than market, try to fill at limit price
+    execPrice = limitPrice;
+  }
+  // simulate spread/slippage: add a slippage proportional to liquidity and qty
+  const slippage = (qty / (t.liquidity + qty)) * t.spread;
+  if (side === 'buy') execPrice *= (1 + slippage);
+  else execPrice *= (1 - slippage);
+
+  execPrice = +execPrice.toFixed(4);
+
+  // Update positions and cash
+  const pos = STATE.positions[symbol] || { qty: 0, avg: 0 };
+  if (side === 'buy') {
+    const cost = execPrice * qty;
+    if (cost > STATE.cash + 0.0001) {
+      pushLog('Insufficient cash to execute trade');
+      return;
+    }
+    const newQty = pos.qty + qty;
+    const newAvg = (pos.avg * pos.qty + execPrice * qty) / (newQty || 1);
+    STATE.positions[symbol] = { qty: newQty, avg: newAvg };
+    STATE.cash -= cost;
+    pushLog(`Bought ${qty} ${symbol} @ ${fmt(execPrice)} (cash ${fmt(STATE.cash)})`);
+  } else {
+    // sell
+    if (qty > pos.qty + 0.0001) {
+      pushLog('Insufficient shares to sell');
+      return;
+    }
+    const proceed = execPrice * qty;
+    const remainingQty = pos.qty - qty;
+    let realizedGain = 0;
+    if (qty > 0) {
+      realizedGain = (execPrice - pos.avg) * qty;
+    }
+    if (remainingQty <= 0) {
+      delete STATE.positions[symbol];
+    } else {
+      STATE.positions[symbol] = { qty: remainingQty, avg: pos.avg };
+    }
+    STATE.cash += proceed;
+    STATE.realized += realizedGain;
+    pushLog(`Sold ${qty} ${symbol} @ ${fmt(execPrice)} (realized ${fmt(realizedGain)})`);
+  }
+
+  // record trade
+  const tr = { ts: Date.now(), time: now().toLocaleTimeString(), symbol, side, qty, price: execPrice, meta };
+  STATE.trades.unshift(tr);
+  if (STATE.trades.length > 1000) STATE.trades.pop();
+  saveState();
+}
+
+/* ---------------------------
+   Market loop - advances marketTimeSec and ticks
+   --------------------------- */
+
+function startMarketLoop() {
+  // compute market open seconds window
+  const openSec = CONFIG.MARKET_OPEN_HOUR * 3600 + CONFIG.MARKET_OPEN_MIN * 60;
+  const closeSec = CONFIG.MARKET_CLOSE_HOUR * 3600 + CONFIG.MARKET_CLOSE_MIN * 60;
+
+  // initialize marketTimeSec to open
+  STATE.marketTimeSec = openSec; // start at 09:30
+
+  // inner tick function
+  const tick = () => {
+    if (!STATE.running) return;
+    // compute dt in seconds depending on sim speed
+    const speed = CONFIG.ACCELERATIONS[STATE.simSpeedIdx];
+    const dtSec = CONFIG.NORMAL_TICK_SEC * speed; // e.g., 60s * speed
+    // advance market index and tickers
+    stepMarketIndex(dtSec);
+    stepTickers(dtSec);
+    // process orders
+    processOrders();
+    // emit occasional news
+    emitNews();
+    // update portfolio unrealized
+    updatePortfolioUnrealized();
+    // advance market time
+    STATE.marketTimeSec += dtSec;
+    // market open/close logic
+    const currentHour = Math.floor(STATE.marketTimeSec / 3600) % 24;
+    const currentMin = Math.floor((STATE.marketTimeSec % 3600) / 60);
+    // For UI display, set Market Time formatted
+    const displayedHour = currentHour.toString().padStart(2,'0');
+    const displayedMin = currentMin.toString().padStart(2,'0');
+    $('marketTime').textContent = displayedHour + ':' + displayedMin;
+    // periodically prune news sentiment
+    for (let t of STATE.tickers) {
+      t.newsSentiment *= 0.997;
+    }
+    // schedule next tick with real ms depending on sim tick configuration
+    setTimeout(tick, CONFIG.SIM_TICK_MS);
+    // refresh UI
+    renderAll();
+  };
+
+  // Start ticking
+  tick();
+}
+
+/* ---------------------------
+   UI Rendering functions
+   --------------------------- */
+
+function renderTickerList(filter='') {
+  const container = $('tickerList');
+  container.innerHTML = '';
+  const filterLower = filter.toLowerCase();
+  const arr = STATE.tickers.slice().sort((a,b)=> b.price - a.price);
+  for (let t of arr) {
+    if (filterLower) {
+      if (!(t.symbol.toLowerCase().includes(filterLower) || t.name.toLowerCase().includes(filterLower))) continue;
+    }
+    const row = document.createElement('div');
+    row.className = 'ticker-row';
+    row.innerHTML = `<div style="display:flex;gap:10px;align-items:center">
+      <div style="width:52px">
+        <div style="font-weight:800">${t.symbol}</div>
+        <div style="font-size:11px;color:var(--muted)">${t.sector}</div>
+      </div>
+      <div style="max-width:180px">
+        <div style="font-weight:700" class="price">${fmt(t.price)}</div>
+        <div style="font-size:12px;color:var(--muted)">${t.name}</div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-weight:800">${( (t.price - t.mid) / t.mid * 100).toFixed(2)}%</div>
+      <div style="font-size:12px;color:var(--muted)">${t.liquidity} vol</div>
+      <div style="height:6px"></div>
+      <button class="btn" onclick="selectSymbol('${t.symbol}')">Select</button>
+    </div>`;
+    container.appendChild(row);
+  }
+}
+
+function renderHeatmap() {
+  const container = $('heatmap');
+  container.innerHTML = '';
+  // pick top 16 by absolute movers this session
+  const movers = STATE.tickers.slice().sort((a,b)=> Math.abs(b.price - b.mid) - Math.abs(a.price - a.mid)).slice(0,16);
+  for (let t of movers) {
+    const pct = ((t.price - t.mid) / t.mid) * 100;
+    const tile = document.createElement('div');
+    tile.className = 'heat-tile';
+    const color = pct >= 0 ? 'rgba(0,215,170,' + (0.06 + Math.min(0.5, pct/50)) + ')' : 'rgba(255,90,90,' + (0.06 + Math.min(0.5, Math.abs(pct)/50)) + ')';
+    tile.style.background = color;
+    tile.innerHTML = `<div style="font-size:12px;color:var(--muted)">${t.symbol}</div><div style="font-weight:800">${pct.toFixed(2)}%</div>`;
+    container.appendChild(tile);
+  }
+}
+
+let CHART_STATE = {
+  symbol: null,
+  interval: 1, // in minutes
+  zoom: 1,
+  pan: 0
+};
+
+function selectSymbol(sym) {
+  CHART_STATE.symbol = sym;
+  $('chartSymbol').textContent = sym;
+  renderChart();
+}
+
+/* Chart rendering - candlestick chart on canvas
+   We implement basic candles using priceHistory[symbol] aggregated to chosen interval.
+*/
+const chartCanvas = $('chartCanvas');
+const chartCtx = chartCanvas.getContext('2d');
+
+function resizeChartCanvas() {
+  const rect = chartCanvas.getBoundingClientRect();
+  chartCanvas.width = Math.floor(rect.width * (window.devicePixelRatio||1));
+  chartCanvas.height = Math.floor(rect.height * (window.devicePixelRatio||1));
+  chartCtx.setTransform(1,0,0,1,0,0);
+  chartCtx.scale(window.devicePixelRatio||1, window.devicePixelRatio||1);
+}
+window.addEventListener('resize', ()=>{ resizeChartCanvas(); renderChart(); });
+
+function aggregateCandles(symbol, minutes) {
+  const base = STATE.priceHistory[symbol] || [];
+  if (!base.length) return [];
+  // base candles are assumed to be 1-minute resolution with timeSec
+  const buckets = {};
+  for (let c of base) {
+    const bucket = Math.floor(c.timeSec / 60 / minutes) * minutes;
+    if (!buckets[bucket]) buckets[bucket] = {timeSec: bucket*60, open:c.open, high:c.high, low:c.low, close:c.close, volume:c.volume};
+    else {
+      const b = buckets[bucket];
+      b.high = Math.max(b.high, c.high);
+      b.low = Math.min(b.low, c.low);
+      b.close = c.close;
+      b.volume += c.volume;
+    }
+  }
+  // convert to sorted array
+  const arr = Object.values(buckets).sort((a,b)=>a.timeSec - b.timeSec);
+  return arr;
+}
+
+function renderChart() {
+  resizeChartCanvas();
+  const sym = CHART_STATE.symbol;
+  const ctx = chartCtx;
+  const rect = chartCanvas.getBoundingClientRect();
+  ctx.clearRect(0,0,rect.width, rect.height);
+  if (!sym) {
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    ctx.fillRect(0,0,rect.width, rect.height);
+    ctx.fillStyle = '#bdf6e3';
+    ctx.font = '18px Inter';
+    ctx.fillText('Select a symbol to view chart', 24, 40);
+    return;
+  }
+  const minutes = CHART_STATE.interval;
+  const candles = aggregateCandles(sym, minutes);
+  if (!candles.length) {
+    // show current price
+    const t = STATE.tickers.find(x=>x.symbol===sym);
+    if (t) {
+      ctx.fillStyle = 'rgba(255,255,255,0.02)';
+      ctx.fillRect(0,0,rect.width, rect.height);
+      ctx.fillStyle = '#bdf6e3';
+      ctx.font = '18px Inter';
+      ctx.fillText('No candle data yet for ' + sym + '. Current price: ' + fmt(t.price), 24, 40);
+    }
+    return;
+  }
+
+  // Determine visible window based on zoom & pan
+  const visibleCount = Math.max(20, Math.floor(80 / CHART_STATE.zoom));
+  const startIdx = Math.max(0, candles.length - visibleCount - Math.floor(CHART_STATE.pan));
+  const visible = candles.slice(startIdx, startIdx + visibleCount);
+
+  // Compute price range
+  let high = Math.max(...visible.map(c=>c.high));
+  let low = Math.min(...visible.map(c=>c.low));
+  // Add padding
+  const padding = (high - low) * 0.12 || high*0.02;
+  high += padding; low -= padding;
+
+  // Draw background grid
+  ctx.fillStyle = '#041122';
+  ctx.fillRect(0,0,rect.width, rect.height);
+  ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+  ctx.lineWidth = 1;
+  const gridLines = 4;
+  for (let i=0;i<=gridLines;i++){
+    const y = (rect.height - 40) * (i / gridLines) + 20;
+    ctx.beginPath(); ctx.moveTo(60,y); ctx.lineTo(rect.width - 20, y); ctx.stroke();
+    // price label
+    const price = high - (i / gridLines) * (high - low);
+    ctx.fillStyle = 'rgba(189,246,227,0.45)';
+    ctx.font = '12px Inter';
+    ctx.fillText(price.toFixed(2), 6, y+4);
+  }
+
+  // Candles rendering area
+  const left = 60;
+  const right = rect.width - 20;
+  const top = 20;
+  const bottom = rect.height - 20;
+  const width = right - left;
+  const candleW = Math.max(4, Math.floor(width / visible.length * 0.72));
+  const gap = Math.max(2, Math.floor((width - candleW * visible.length) / Math.max(1, visible.length - 1)));
+
+  for (let i=0;i<visible.length;i++){
+    const c = visible[i];
+    const x = left + i * (candleW + gap);
+    const yOpen = top + ( (high - c.open) / (high - low) ) * (bottom - top);
+    const yClose = top + ( (high - c.close) / (high - low) ) * (bottom - top);
+    const yHigh = top + ( (high - c.high) / (high - low) ) * (bottom - top);
+    const yLow = top + ( (high - c.low) / (high - low) ) * (bottom - top);
+
+    const isUp = c.close >= c.open;
+    ctx.strokeStyle = isUp ? '#00ff9f' : '#ff6b6b';
+    ctx.fillStyle = isUp ? 'rgba(0,255,160,0.14)' : 'rgba(255,100,100,0.12)';
+    // wick
+    ctx.beginPath();
+    ctx.moveTo(x + candleW/2, yHigh);
+    ctx.lineTo(x + candleW/2, yLow);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // body
+    const bodyTop = Math.min(yOpen, yClose);
+    const bodyHeight = Math.max(1, Math.abs(yClose - yOpen));
+    ctx.fillRect(x, bodyTop, candleW, bodyHeight);
+    ctx.strokeRect(x, bodyTop, candleW, bodyHeight);
+  }
+
+  // Draw current price line
+  const last = visible[visible.length-1];
+  const lastY = top + ( (high - last.close) / (high - low) ) * (bottom - top);
+  ctx.strokeStyle = 'rgba(0,215,170,0.7)';
+  ctx.setLineDash([6,6]);
+  ctx.beginPath(); ctx.moveTo(left, lastY); ctx.lineTo(right, lastY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#bdf6e3';
+  ctx.font = '12px Inter';
+  ctx.fillText('Last: ' + last.close.toFixed(2), right - 90, lastY - 8);
+
+  // small volume bars at bottom
+  const volTop = bottom + 8;
+  const volBottom = bottom + 40;
+  const maxVol = Math.max(...visible.map(c=>c.volume));
+  for (let i=0;i<visible.length;i++){
+    const c = visible[i];
+    const x = left + i * (candleW + gap);
+    const volH = (c.volume / (maxVol || 1)) * (volBottom - volTop);
+    ctx.fillStyle = 'rgba(189,246,227,0.12)';
+    ctx.fillRect(x, volBottom - volH, Math.max(2, candleW), volH);
+  }
+}
+
+/* ---------------------------
+   Render order history and positions
+   --------------------------- */
+function renderOrderHistory() {
+  const container = $('orderHistory');
+  container.innerHTML = '';
+  const max = Math.min(200, STATE.trades.length);
+  for (let i=0;i<Math.min(200, STATE.trades.length); i++){
+    const t = STATE.trades[i];
+    const div = document.createElement('div');
+    div.style.padding = '6px';
+    div.style.borderBottom = '1px dashed rgba(255,255,255,0.02)';
+    div.innerHTML = `<div style="font-size:12px;color:var(--muted)">${t.time}</div>
+      <div style="font-weight:700">${t.side.toUpperCase()} ${t.qty} ${t.symbol} @ ${fmt(t.price)}</div>`;
+    container.appendChild(div);
+  }
+}
+
+function renderPositions() {
+  const tbody = $('positionsTable');
+  tbody.innerHTML = '';
+  for (let sym in STATE.positions) {
+    const p = STATE.positions[sym];
+    const t = STATE.tickers.find(x=>x.symbol===sym);
+    const market = t ? t.price : 0;
+    const unreal = (market - p.avg) * p.qty;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="font-weight:800">${sym}</td><td>${p.qty}</td><td>${fmt(p.avg)}</td><td>${fmt(market)}</td><td style="color:${unreal>=0? 'rgba(0,255,150,0.9)' : 'rgba(255,90,90,0.9)'}">${fmt(unreal)}</td>`;
+    tbody.appendChild(tr);
+  }
+  $('cashBalance').textContent = fmt(STATE.cash);
+  $('unrealized').textContent = fmt(computeTotalUnrealized());
+  $('realized').textContent = fmt(STATE.realized);
+}
+
+function computeTotalUnrealized() {
+  let sum = 0;
+  for (let sym in STATE.positions) {
+    const p = STATE.positions[sym];
+    const t = STATE.tickers.find(x=>x.symbol===sym);
+    if (!t) continue;
+    sum += (t.price - p.avg) * p.qty;
+  }
+  STATE.unrealized = sum;
+  return sum;
+}
+
+/* ---------------------------
+   Top movers display
+   --------------------------- */
+function renderTopMovers() {
+  const container = $('topMovers');
+  container.innerHTML = '';
+  const movers = STATE.tickers.slice().sort((a,b)=> Math.abs((b.price - b.mid) / b.mid) - Math.abs((a.price - a.mid) / a.mid)).slice(0,8);
+  for (let t of movers) {
+    const pct = ((t.price - t.mid) / t.mid) * 100;
+    const div = document.createElement('div');
+    div.style.display = 'flex';
+    div.style.justifyContent = 'space-between';
+    div.style.padding = '6px 0';
+    div.innerHTML = `<div style="font-weight:700">${t.symbol}</div><div style="color:${pct>=0?'#7fffd4':'#ff8b8b'}">${pct.toFixed(2)}%</div>`;
+    container.appendChild(div);
+  }
+}
+
+/* ---------------------------
+   News feed rendering
+   --------------------------- */
+function renderNews() {
+  const container = $('newsFeed');
+  container.innerHTML = '';
+  for (let i=0;i<Math.min(40, STATE.news.length); i++) {
+    const n = STATE.news[i];
+    const d = document.createElement('div');
+    d.style.padding = '6px';
+    d.style.borderBottom = '1px dashed rgba(255,255,255,0.02)';
+    d.innerHTML = `<div style="font-size:12px;color:var(--muted)">${n.ts}</div><div style="font-weight:700">${n.text}</div>`;
+    container.appendChild(d);
+  }
+}
+
+/* ---------------------------
+   Achievements
+   --------------------------- */
+const ACHIEVEMENT_DEFS = [
+  { id:'profit_1000', name:'First Profit $1k', check: state => state.realized >= 1000 },
+  { id:'profit_10000', name:'Profit $10k', check: state => state.realized >= 10000 },
+  { id:'hold_10', name:'Hold 10 Different Stocks', check: state => Object.keys(state.positions).length >= 10 },
+  { id:'trade_10', name:'10 Trades Executed', check: state => state.trades.length >= 10 },
+  { id:'survive_crash', name:'Crash Survivor', check: state => state.logs.some(l=>l.includes('flash crash')) },
+];
+
+function checkAchievements() {
+  for (let a of ACHIEVEMENT_DEFS) {
+    if (!STATE.achievements[a.id] && a.check(STATE)) {
+      STATE.achievements[a.id] = { unlockedAt: now().toLocaleString(), name: a.name };
+      pushLog('Achievement unlocked: ' + a.name);
+    }
+  }
+}
+
+function renderAchievements() {
+  const container = $('achievements'); container.innerHTML = '';
+  for (let id in STATE.achievements) {
+    const a = STATE.achievements[id];
+    const d = document.createElement('div');
+    d.style.padding = '6px'; d.style.borderBottom = '1px dashed rgba(255,255,255,0.02)';
+    d.innerHTML = `<div style="font-weight:700">${a.name}</div><div style="font-size:12px;color:var(--muted)">${a.unlockedAt}</div>`;
+    container.appendChild(d);
+  }
+}
+
+/* ---------------------------
+   Event: push log to UI
+   --------------------------- */
+function pushLog(msg) {
+  const ts = now().toLocaleTimeString();
+  STATE.logs.unshift({ts, msg});
+  if (STATE.logs.length > 500) STATE.logs.pop();
+  // also append to news for visibility
+  // render to console area
+  renderLogs();
+}
+
+function renderLogs(){
+  const term = document.querySelectorAll('.terminal')[0];
+  if (!term) return;
+  term.innerHTML = '';
+  for (let i=0;i<Math.min(200, STATE.logs.length); i++){
+    const e = STATE.logs[i];
+    const div = document.createElement('div');
+    div.style.padding = '6px';
+    div.style.borderBottom = '1px dashed rgba(255,255,255,0.02)';
+    div.innerHTML = `<div style="font-size:12px;color:var(--muted)">${e.ts}</div><div style="font-weight:700">${e.msg}</div>`;
+    term.appendChild(div);
+  }
+}
+
+/* ---------------------------
+   Global renderAll to refresh UI
+   --------------------------- */
+function renderAll() {
+  renderTickerList($('searchInput').value);
+  renderHeatmap();
+  renderChart();
+  renderOrderHistory();
+  renderPositions();
+  renderTopMovers();
+  renderNews();
+  renderAchievements();
+  renderLogs();
+}
+
+/* ---------------------------
+   Auto-save / persistence
+   --------------------------- */
+function saveState() {
+  try {
+    const dump = {
+      tickers: STATE.tickers,
+      positions: STATE.positions,
+      cash: STATE.cash,
+      realized: STATE.realized,
+      trades: STATE.trades,
+      logs: STATE.logs,
+      news: STATE.news,
+      achievements: STATE.achievements,
+      priceHistory: {}, // avoid storing huge arrays; only store last 200 per symbol
+      simSpeedIdx: STATE.simSpeedIdx
+    };
+    for (let sym in STATE.priceHistory) {
+      const arr = STATE.priceHistory[sym];
+      dump.priceHistory[sym] = arr.slice(-300); // limit
+    }
+    localStorage.setItem('daytrade_sim_v1', JSON.stringify(dump));
+  } catch (e) {
+    console.warn('Save failed', e);
+  }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('daytrade_sim_v1');
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    // merge into STATE carefully
+    STATE.tickers = d.tickers || STATE.tickers;
+    STATE.positions = d.positions || STATE.positions;
+    STATE.cash = d.cash || STATE.cash;
+    STATE.realized = d.realized || STATE.realized;
+    STATE.trades = d.trades || STATE.trades;
+    STATE.logs = d.logs || STATE.logs;
+    STATE.news = d.news || STATE.news;
+    STATE.achievements = d.achievements || STATE.achievements;
+    STATE.priceHistory = d.priceHistory || STATE.priceHistory;
+    STATE.simSpeedIdx = d.simSpeedIdx || STATE.simSpeedIdx;
+    return true;
+  } catch(e){ return false; }
+}
+
+/* ---------------------------
+   Order form & UI interactions
+   --------------------------- */
+
+$('btnBuy').addEventListener('click', ()=> {
+  const sym = CHART_STATE.symbol;
+  if (!sym) { alert('Select a symbol first'); return; }
+  const qty = Math.abs(Number($('orderAmount').value) || 0);
+  if (!qty) { alert('Enter quantity'); return; }
+  const type = $('orderType').value;
+  let price = null;
+  if (type !== 'market') {
+    price = Number(prompt('Enter limit/stop price for this order (current price: ' + fmt(getPrice(sym)) + ')', getPrice(sym)));
+    if (!price || isNaN(price)) { alert('Invalid price'); return; }
+  }
+  placeOrder({symbol: sym, side:'buy', type, qty, price});
+  renderAll();
+});
+
+$('btnSell').addEventListener('click', ()=> {
+  const sym = CHART_STATE.symbol;
+  if (!sym) { alert('Select a symbol first'); return; }
+  const qty = Math.abs(Number($('orderAmount').value) || 0);
+  if (!qty) { alert('Enter quantity'); return; }
+  const type = $('orderType').value;
+  let price = null;
+  if (type !== 'market') {
+    price = Number(prompt('Enter limit/stop price for this order (current price: ' + fmt(getPrice(sym)) + ')', getPrice(sym)));
+    if (!price || isNaN(price)) { alert('Invalid price'); return; }
+  }
+  placeOrder({symbol: sym, side:'sell', type, qty, price});
+  renderAll();
+});
+
+/* ---------------------------
+   Utility to get current ticker price
+   --------------------------- */
+function getPrice(sym) {
+  const t = STATE.tickers.find(x=>x.symbol===sym);
+  return t ? t.price : 0;
+}
+
+/* ---------------------------
+   Replay mode (replay recorded candles)
+   --------------------------- */
+let replayTimer = null;
+function startReplay(sym) {
+  if (!STATE.priceHistory[sym] || STATE.priceHistory[sym].length < 2) { alert('Not enough data to replay'); return; }
+  let idx = 0;
+  const arr = STATE.priceHistory[sym].slice(-200);
+  if (replayTimer) { clearInterval(replayTimer); replayTimer = null; }
+  replayTimer = setInterval(()=>{
+    const c = arr[idx];
+    // temporarily set chart to show up to idx
+    const saved = CHART_STATE.pan;
+    CHART_STATE.pan = Math.max(0, arr.length - idx);
+    renderChart();
+    idx++;
+    if (idx >= arr.length) { clearInterval(replayTimer); replayTimer = null; CHART_STATE.pan = saved; }
+  }, 150);
+}
+
+/* ---------------------------
+   New session: reset tickers & price history & portfolio
+   --------------------------- */
+function newSession() {
+  if (!confirm('Start a new simulated trading session? This will reset positions and history.')) return;
+  STATE = {
+    marketTimeSec: 0,
+    isMarketOpen: false,
+    tickers: [],
+    priceHistory: {},
+    positions: {},
+    cash: CONFIG.INITIAL_CASH,
+    realized: 0,
+    unrealized: 0,
+    orders: [],
+    trades: [],
+    news: [],
+    achievements: {},
+    logs: [],
+    simSpeedIdx: 0,
+    running: true,
+    seed: Math.floor(Math.random()*1e9)
+  };
+  rand = makeLCG(STATE.seed);
+  initTickers();
+  saveState();
+  renderAll();
+}
+
+/* ---------------------------
+   UI control hooks
+   --------------------------- */
+$('searchInput').addEventListener('input', ()=> renderTickerList($('searchInput').value));
+$('intervalSelect').addEventListener('change', ()=> {
+  CHART_STATE.interval = Number($('intervalSelect').value);
+  $('chartInterval').textContent = CHART_STATE.interval + 'm';
+  renderChart();
+});
+$('btnZoomIn').addEventListener('click', ()=> { CHART_STATE.zoom *= 1.3; renderChart(); });
+$('btnZoomOut').addEventListener('click', ()=> { CHART_STATE.zoom /= 1.3; renderChart(); });
+$('btnReplay').addEventListener('click', ()=> {
+  if (CHART_STATE.symbol) startReplay(CHART_STATE.symbol);
+  else alert('Select a symbol to replay');
+});
+$('btnAccelerate').addEventListener('click', ()=> {
+  STATE.simSpeedIdx = (STATE.simSpeedIdx + 1) % CONFIG.ACCELERATIONS.length;
+  $('btnAccelerate').textContent = 'Speed x' + CONFIG.ACCELERATIONS[STATE.simSpeedIdx];
+  pushLog('Simulation speed set to x' + CONFIG.ACCELERATIONS[STATE.simSpeedIdx]);
+});
+
+/* Buttons: Tutorial, New Day, Export Log */
+$('btnTutorial').addEventListener('click', ()=> {
+  alert('Tutorial:\n\n1) Select a symbol from the market list on the left.\n2) Choose order type and amount. Try Market order to execute immediately.\n3) Watch your portfolio update on the right.\n4) Use replay to simulate recent price moves. News events will impact prices.\n\nThis is a local single-file simulator; no real money involved.');
+});
+$('btnNewDay').addEventListener('click', newSession);
+$('btnExport').addEventListener('click', ()=> {
+  const data = { state: STATE, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'daytrade-sim-export.json'; a.click(); URL.revokeObjectURL(url);
+  pushLog('Exported simulation state');
+});
+
+/* Download trade history CSV */
+function exportTradesCSV() {
+  const rows = [['time','symbol','side','qty','price']];
+  for (let t of STATE.trades) rows.push([t.time, t.symbol, t.side, t.qty, t.price]);
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'trades.csv'; a.click(); URL.revokeObjectURL(url);
+}
+$('downloadBtn')?.addEventListener('click', exportTradesCSV);
+
+/* ---------------------------
+   Scheduled periodic tasks (news, achievements, save)
+   --------------------------- */
+setInterval(()=> {
+  // random news occasionally
+  if (rand() < 0.15) emitNews();
+  checkAchievements();
+  saveState();
+  renderAll();
+}, 5000);
+
+/* ---------------------------
+   Initialization
+   --------------------------- */
+(function init() {
+  const loaded = loadState();
+  if (!loaded) {
+    initTickers();
+    // seed some price history by stepping a few times
+    for (let i=0;i<60;i++){ stepMarketIndex(60); stepTickers(60); STATE.marketTimeSec += 60; }
+    pushLog('Initialized new market session');
+    saveState();
+  }
+  // choose default symbol for chart to be first ticker
+  if (STATE.tickers.length) { CHART_STATE.symbol = STATE.tickers[0].symbol; $('chartSymbol').textContent = CHART_STATE.symbol; }
+  renderAll();
+  startMarketLoop();
+  // UI auto-save every 10s
+  setInterval(saveState, 10000);
+})();
+
+/* ---------------------------
+   Helpful: Expose some functions for console debugging
+   --------------------------- */
+window.DTSim = {
+  STATE,
+  getPrice,
+  setPct: (sym, price) => { const t = STATE.tickers.find(x=>x.symbol===sym); if (t) { t.price = price; pushLog('Manual price set ' + sym + ' ' + price); } },
+  placeOrder,
+  executeTrade
+};
+
+/* ===================================================================
+   Large file note:
+   This single file contains many more features you can extend:
+   - Add technical indicators (RSI, MACD) to the chart
+   - Add multiple chart panes, drawing tools
+   - Add login & server sync (requires backend)
+   - Add websocket support for multiplayer competitions
+   - Add tutorial step-by-step guided overlay
+   =================================================================== */
+</script>
+</body>
+</html>
